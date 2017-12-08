@@ -102,6 +102,19 @@ class Game:
 				response = "猜錯囉，「"+newguess+"」的意思是：\n"+self.meaning
 		return response
 
+	def tip(self):
+		unknown = []
+		for i in range(len(self.oldguess)):
+			if self.oldguess[i] == "？":
+				unknown.append(i)
+		if len(unknown) < 2:
+			return "沒有更多提示了，「"+self.oldguess+"」的意思是：\n"+self.meaning
+		else :
+			index = unknown[random.randint(0, len(unknown)-1)]
+			newguess = self.oldguess[:index]+self.word[index]+self.oldguess[index+1:]
+			self.guess(newguess)
+			return "使用提示，「"+newguess+"」的意思是：\n"+self.meaning
+
 	def giveup(self):
 		self.cur.execute("""SELECT `guess`, `word`, `meaning` FROM `guess` WHERE `platform` = %s AND `userid` = %s""",
 			(self.platform, self.userid) )
@@ -146,6 +159,10 @@ class TelegramGame(Game):
 			if m != None:
 				return super(TelegramGame, self).tip()
 
+			m = re.match(r"/giveup"+self.cmdpostfix+" ", message)
+			if m != None:
+				return super(TelegramGame, self).giveup()+"\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
+
 		m = re.match(r"/[^ ]+ ", message)
 		if m != None:
 			return ""
@@ -183,10 +200,12 @@ class LineGame(Game):
 			response = super(LineGame, self).guess(message)
 			if self.isstart and message.strip() == "放棄":
 				response = super(LineGame, self).giveup()+"\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
+			elif self.isstart and message.strip() == "提示":
+				response = super(LineGame, self).tip()
 			elif not self.isstart:
 				response += "\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
 		else :
-			response = super(LineGame, self).start(message)+"\n\n放棄遊戲請輸入 放棄"
+			response = super(LineGame, self).start(message)+"\n\n可輸入「提示」獲取提示，放棄遊戲請輸入「放棄」"
 		return response
 
 	def sendmessage(self, message):
@@ -210,10 +229,12 @@ class FacebookGame(Game):
 			response = super(FacebookGame, self).guess(message)
 			if self.isstart and message.strip() == "放棄":
 				response = super(FacebookGame, self).giveup()+"\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
+			elif self.isstart and message.strip() == "提示":
+				response = super(FacebookGame, self).tip()
 			elif not self.isstart:
 				response += "\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
 		else :
-			response = super(FacebookGame, self).start(message)+"\n\n放棄遊戲請輸入 放棄"
+			response = super(FacebookGame, self).start(message)+"\n\n可輸入「提示」獲取提示，放棄遊戲請輸入「放棄」"
 		return response
 
 	def sendmessage(self, message):
