@@ -14,6 +14,7 @@ class Game:
 		config = configparser.ConfigParser()
 		configpath = os.path.dirname(os.path.realpath(__file__))+'/config.ini'
 		config.read(configpath)
+		self.guesslenlimit = int(config.get('global', 'guesslenlimit'))
 		self.db = pymysql.connect(host=config.get('database', 'host'),
 								  user=config.get('database', 'user'),
 								  passwd=config.get('database', 'passwd'),
@@ -79,6 +80,8 @@ class Game:
 
 	def guess(self, guess):
 		guess = guess.replace("\n", "").strip()
+		if len(guess) > self.guesslenlimit:
+			return "偵測到作弊行為，請勿破壞遊戲體驗，此次猜測無效"
 		newguess = ""
 		for i in range(len(self.word)):
 			if self.oldguess[i] != "？":
