@@ -34,7 +34,7 @@ class Game:
 
 	def start(self, length = 0):
 		if self.isstart:
-			return "遊戲已經開始了\n\n"+self.oldguess+" 的意思是：\n"+self.meaning
+			return "遊戲已經開始了\n「"+self.oldguess+"」的意思是：\n"+self.meaning
 		try:
 			length = int(length)
 			if length < 2:
@@ -86,7 +86,7 @@ class Game:
 			else :
 				newguess += "？"
 		if newguess == self.word:
-			response = "恭喜猜中了，答案是 "+self.word
+			response = "恭喜猜中了，答案是「"+self.word+"」"
 			self.cur.execute("""DELETE FROM `guess` WHERE `platform` = %s AND `userid` = %s""",
 				(self.platform, self.userid) )
 			self.db.commit()
@@ -94,12 +94,12 @@ class Game:
 		else :
 			self.meaning = self.meaning.replace(self.oldguess, newguess)
 			if self.oldguess != newguess:
-				response = "快要猜中囉\n\n"+newguess+" 的意思是：\n"+self.meaning
+				response = "快要猜中囉，「"+newguess+"」的意思是：\n"+self.meaning
 				self.cur.execute("""UPDATE `guess` SET `guess` = %s, `meaning` = %s WHERE `platform` = %s AND `userid` = %s""",
 					(newguess, self.meaning, self.platform, self.userid) )
 				self.db.commit()
 			else :
-				response = "猜錯囉\n\n"+newguess+" 的意思是：\n"+self.meaning
+				response = "猜錯囉，「"+newguess+"」的意思是：\n"+self.meaning
 		return response
 
 	def giveup(self):
@@ -110,7 +110,7 @@ class Game:
 			(self.platform, self.userid) )
 		self.db.commit()
 		self.isstart = False
-		return "答案是 "+self.word
+		return "答案是「"+self.word+"」"
 
 	def log(self, message):
 		self.cur.execute("""INSERT INTO `log` (`platform`, `userid`, `message`) VALUES (%s, %s, %s)""",
@@ -139,16 +139,16 @@ class TelegramGame(Game):
 		m = re.match(r"/start("+self.botname+")? (.+)?", message)
 		if m != None:
 			length = m.group(2)
-			return super(TelegramGame, self).start(length)+"\n\n放棄請輸入 /giveup"+self.cmdpostfix
+			return super(TelegramGame, self).start(length)+"\n回答需Reply，放棄請輸入 /giveup"+self.cmdpostfix
 
 		m = re.match(r"/giveup("+self.botname+")? ", message)
 		if m != None:
-			return super(TelegramGame, self).giveup()+"\n\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
+			return super(TelegramGame, self).giveup()+"\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
 
 		if self.isstart:
 			response = super(TelegramGame, self).guess(message)
 			if not self.isstart:
-				response += "\n\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
+				response += "\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
 			return response
 
 	def sendmessage(self, message):
