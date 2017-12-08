@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 from flask import Flask, request, abort
+import configparser
 from game import *
 from linebot import WebhookHandler
 from linebot.exceptions import InvalidSignatureError
