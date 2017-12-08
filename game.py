@@ -141,9 +141,10 @@ class TelegramGame(Game):
 			length = m.group(1)
 			return super(TelegramGame, self).start(length)+"\n回答需Reply，放棄請輸入 /giveup"+self.cmdpostfix
 
-		m = re.match(r"/giveup"+self.cmdpostfix+" ", message)
-		if m != None:
-			return super(TelegramGame, self).giveup()+"\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
+		if self.isstart:
+			m = re.match(r"/tip"+self.cmdpostfix+" ", message)
+			if m != None:
+				return super(TelegramGame, self).tip()
 
 		m = re.match(r"/[^ ]+ ", message)
 		if m != None:
