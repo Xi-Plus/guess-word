@@ -38,17 +38,12 @@ class Game:
 		try:
 			length = int(length)
 			if length < 2:
-				length = 0
+				length = random.randint(2, 10)
 			if length > 10:
 				length = 10
 		except Exception as e:
-			length = 0
-		if length == 0:
-			self.cur.execute("""SELECT COUNT(*) FROM `dictionary`""")
-			count = self.cur.fetchall()[0][0]
-			wordoffset = random.randint(0, count-1) ###
-			self.cur.execute("""SELECT `word`, `meaning` FROM `dictionary` LIMIT %s,1""", (wordoffset))
-		elif length == 10:
+			length = random.randint(2, 10)
+		if length == 10:
 			self.cur.execute("""SELECT COUNT(*) FROM `dictionary` WHERE `length` >= 10""")
 			count = self.cur.fetchall()[0][0]
 			wordoffset = random.randint(0, count-1)
