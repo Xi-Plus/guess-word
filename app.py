@@ -51,6 +51,8 @@ def telegram():
 		chat_id = data["message"]["chat"]["id"]
 		game = TelegramGame(chat_id)
 		if "text" in data["message"]:
+			if "reply_to_message" in data["message"] and data["message"]["reply_to_message"]["from"]["id"] != game.botid:
+				return "OK"
 			response = game.response(data["message"]["text"])
 			if response != "":
 				game.sendmessage(response, data["message"]["message_id"])

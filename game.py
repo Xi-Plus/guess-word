@@ -128,6 +128,7 @@ class TelegramGame(Game):
 		config.read(configpath)
 		self.token = config.get('telegram', 'token')
 		self.botname = "@"+config.get('telegram', 'botname')
+		self.botid = int(config.get('telegram', 'botid'))
 		if int(userid) > 0:
 			self.cmdpostfix = ""
 		else :
