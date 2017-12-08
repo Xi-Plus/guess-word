@@ -7,7 +7,8 @@ from linebot.exceptions import InvalidSignatureError
 from linebot.models import MessageEvent, TextMessage
 
 config = configparser.ConfigParser()
-config.read(os.path.dirname(__file__)+'/config.ini')
+configpath = os.path.dirname(os.path.realpath(__file__))+'/config.ini'
+config.read(configpath)
 handler = WebhookHandler(config.get('line', 'secret'))
 facebooK_hub_verify_token = config.get('facebook', 'hub_verify_token')
 

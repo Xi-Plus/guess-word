@@ -12,7 +12,8 @@ class Game:
 		self.platform = platform
 		self.userid = userid
 		config = configparser.ConfigParser()
-		config.read(os.path.dirname(__file__)+'/config.ini')
+		configpath = os.path.dirname(os.path.realpath(__file__))+'/config.ini'
+		config.read(configpath)
 		self.db = pymysql.connect(host=config.get('database', 'host'),
 								  user=config.get('database', 'user'),
 								  passwd=config.get('database', 'passwd'),
@@ -125,7 +126,8 @@ class TelegramGame(Game):
 	def __init__(self, userid):
 		super(TelegramGame, self).__init__("tg", userid)
 		config = configparser.ConfigParser()
-		config.read(os.path.dirname(__file__)+'/config.ini')
+		configpath = os.path.dirname(os.path.realpath(__file__))+'/config.ini'
+		config.read(configpath)
 		self.token = config.get('telegram', 'token')
 		self.botname = "@"+config.get('telegram', 'botname')
 		if int(userid) > 0:
@@ -161,7 +163,8 @@ class LineGame(Game):
 		from linebot import LineBotApi
 		super(LineGame, self).__init__("line", userid)
 		config = configparser.ConfigParser()
-		config.read(os.path.dirname(__file__)+'/config.ini')
+		configpath = os.path.dirname(os.path.realpath(__file__))+'/config.ini'
+		config.read(configpath)
 		self.secret = config.get('line', 'secret')
 		self.token = config.get('line', 'token')
 		self.replytoken = replytoken
@@ -189,7 +192,8 @@ class FacebookGame(Game):
 	def __init__(self, userid):
 		super(FacebookGame, self).__init__("fb", userid)
 		config = configparser.ConfigParser()
-		config.read(os.path.dirname(__file__)+'/config.ini')
+		configpath = os.path.dirname(os.path.realpath(__file__))+'/config.ini'
+		config.read(configpath)
 		self.token = config.get('facebook', 'token')
 
 	def response(self, message):
