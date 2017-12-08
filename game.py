@@ -27,8 +27,10 @@ class Game:
 		if len(rows) == 0:
 			self.isstart = False
 		else :
+			from zhconversion import ZhConversion
 			self.oldguess = rows[0][0]
 			self.word = rows[0][1]
+			self.wordhans = ZhConversion(self.word).text()
 			self.meaning = rows[0][2]
 			self.isstart = True
 
@@ -81,7 +83,7 @@ class Game:
 		for i in range(len(self.word)):
 			if self.oldguess[i] != "？":
 				newguess += self.oldguess[i]
-			elif self.word[i] in guess:
+			elif self.word[i] in guess or self.wordhans[i] in guess:
 				newguess += self.word[i]
 			else :
 				newguess += "？"
