@@ -152,7 +152,11 @@ class TelegramGame(Game):
 		m = re.match(r"/start"+self.cmdpostfix+" (.+)?", message)
 		if m != None:
 			length = m.group(1)
-			return super(TelegramGame, self).start(length)+"\n回答需Reply，放棄請輸入 /giveup"+self.cmdpostfix
+			response = super(TelegramGame, self).start(length)+"\n"
+			if self.userid < 0:
+				response += "回答需Reply，"
+			response += "提示請輸入 /tip ，放棄請輸入 /giveup"
+			return response
 
 		if self.isstart:
 			m = re.match(r"/tip"+self.cmdpostfix+" ", message)
