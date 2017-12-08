@@ -151,10 +151,15 @@ class TelegramGame(Game):
 				response += "\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
 			return response
 
-	def sendmessage(self, message):
-		self.log(message)
-		url = "https://api.telegram.org/bot"+self.token+"/sendMessage?chat_id="+str(self.userid)+"&text="+urllib.parse.quote_plus(message.encode())
-		urllib.request.urlopen(url)
+		return ""
+
+	def sendmessage(self, message, reply_to_message_id):
+		self.log("send:"+message)
+		try:
+			url = "https://api.telegram.org/bot"+self.token+"/sendMessage?chat_id="+str(self.userid)+"&reply_to_message_id="+str(reply_to_message_id)+"&text="+urllib.parse.quote_plus(message.encode())
+			urllib.request.urlopen(url)
+		except urllib.error.HTTPError as e:
+			self.log("error:"+str(e.code)+" "+str(e.hdrs))
 
 class LineGame(Game):
 	def __init__(self, userid, replytoken):
