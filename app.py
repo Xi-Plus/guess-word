@@ -49,9 +49,11 @@ def facebookpost():
 def telegram():
 	data = json.loads(request.data.decode("utf8"))
 	if "message" in data:
-		chat_id = data["message"]["chat"]["id"]
-		game = TelegramGame(chat_id)
 		if "text" in data["message"]:
+			userid = data["message"]["chat"]["id"]
+			fromid = data["message"]["from"]["id"]
+			date = data["message"]["date"]
+			game = TelegramGame(userid, fromid, date)
 			if "reply_to_message" in data["message"] and data["message"]["reply_to_message"]["from"]["id"] != game.botid:
 				return "OK"
 			response = game.response(data["message"]["text"])
