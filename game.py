@@ -257,4 +257,4 @@ class FacebookGame(Game):
 		try:
 			res = urllib.request.urlopen(req)
 		except urllib.error.HTTPError as e:
-			raise Exception(str(e.hdrs))
+			self.log("error:"+str(e.code)+" "+str(e.hdrs))
