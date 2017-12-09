@@ -78,6 +78,7 @@ class Game:
 
 	def guess(self, guess):
 		guess = guess.replace("\n", "").strip()
+		self.correct = 0
 		if len(guess) > self.guesslenlimit:
 			return "偵測到作弊行為，請勿破壞遊戲體驗，此次猜測無效"
 		newguess = ""
@@ -86,6 +87,7 @@ class Game:
 				newguess += self.oldguess[i]
 			elif self.word[i] in guess or self.wordhans[i] in guess:
 				newguess += self.word[i]
+				self.correct += 1
 			else :
 				newguess += "？"
 		if newguess == self.word:
@@ -174,29 +176,32 @@ class TelegramGame(Game):
 				config.write(open(configpath, 'w'))
 			res = urllib.request.urlopen('https://api.telegram.org/bot'+self.token+'/getChatMember?chat_id='+str(self.userid)+'&user_id='+str(self.fromid)).read().decode("utf8")
 			res = json.loads(res)
-			self.isadmin = any(i in ["creator", "administrator"] for i in res["result"]["status"])
+			self.isgroup = True
+			self.isadmin = res["result"]["status"] in ["creator", "administrator"]
+		else :
+			self.isgroup = False
 	
-	def checktip(self):
-		tipduration = self.date-self.tipduration
-		self.cur.execute("""SELECT COUNT(*) FROM `tggrouplimit` WHERE `userid` = %s AND `fromid` = %s AND `type` = 'tip' AND `date` > %s""",
-			(self.userid, self.fromid, tipduration) )
-		count = self.cur.fetchall()[0][0]
-		return count < self.tiptimes
+	def checklimit(self, type, date):
+		self.cur.execute("""SELECT COUNT(*) FROM `tggrouplimit` WHERE `userid` = %s AND `fromid` = %s AND `type` = %s AND `date` > %s""",
+			(self.userid, self.fromid, type, date) )
+		return self.cur.fetchall()[0][0]
 
-	def usetip(self):
-		self.cur.execute("""INSERT INTO `tggrouplimit` (`userid`, `fromid`, `type`, `date`) VALUES (%s, %s, %s, %s)""",
-			(self.userid, self.fromid, 'tip', self.date) )
+	def checktip(self):
+		count = self.checklimit("tip", tipduration)
+		return count < self.tiptimes
 
 	def checkgiveup(self):
 		giveupduration = self.date-self.giveupduration
-		self.cur.execute("""SELECT COUNT(*) FROM `tggrouplimit` WHERE `userid` = %s AND `fromid` = %s AND `type` = 'giveup' AND `date` > %s""",
-			(self.userid, self.fromid, giveupduration) )
-		count = self.cur.fetchall()[0][0]
+		count = self.checklimit("giveup", giveupduration)
 		return count < self.giveuptimes
 
-	def usegiveup(self):
+	def addlimit(self, type):
 		self.cur.execute("""INSERT INTO `tggrouplimit` (`userid`, `fromid`, `type`, `date`) VALUES (%s, %s, %s, %s)""",
-			(self.userid, self.fromid, 'giveup', self.date) )
+			(self.userid, self.fromid, type, self.date) )
+
+	def delfailguess(self):
+		self.cur.execute("""DELETE FROM `tggrouplimit` WHERE `type` = 'failguess' AND `userid` = %s""",
+			(self.userid) )
 
 	def setconfig(self, type, value):
 		configpath = os.path.dirname(os.path.realpath(__file__))+'/config/'+str(self.userid)+'.ini'
@@ -221,38 +226,45 @@ class TelegramGame(Game):
 			m = re.match(r"/tip"+self.cmdpostfix+" ", message)
 			if m != None:
 				if self.checktip():
-					self.usetip()
+					self.addlimit("tip")
 					return super(TelegramGame, self).tip()
 				else :
 					return "你的提示使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.meaning
 
 			m = re.match(r"/giveup"+self.cmdpostfix+" ", message)
 			if m != None:
-				if self.checkgiveup():
-					self.usegiveup()
+				if not self.isgroup or self.checkgiveup():
+					if self.isgroup:
+						self.addlimit("giveup")
+					self.delfailguess()
 					return super(TelegramGame, self).giveup()+"\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
 				else :
 					return "你的放棄使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.meaning
 
-		m = re.match(r"/tiplimit"+self.cmdpostfix+" ", message)
-		if m != None:
-			m = re.match(r"/tiplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
+		if self.isgroup:
+			m = re.match(r"/tiplimit"+self.cmdpostfix+" ", message)
 			if m != None:
-				self.setconfig("tiptimes", m.group(1))
-				self.setconfig("tipduration", m.group(2))
-				return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
-			else :
-				return "命令格式錯誤，使用 "+"/tiplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用提示c次"
+				if not self.isadmin:
+					return "只有群組管理員可以更改此設定"
+				m = re.match(r"/tiplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
+				if m != None:
+					self.setconfig("tiptimes", m.group(1))
+					self.setconfig("tipduration", m.group(2))
+					return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
+				else :
+					return "命令格式錯誤，使用 "+"/tiplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用提示c次"
 
-		m = re.match(r"/giveuplimit"+self.cmdpostfix+" ", message)
-		if m != None:
-			m = re.match(r"/giveuplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
+			m = re.match(r"/giveuplimit"+self.cmdpostfix+" ", message)
 			if m != None:
-				self.setconfig("giveuptimes", m.group(1))
-				self.setconfig("giveupduration", m.group(2))
-				return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
-			else :
-				return "命令格式錯誤，使用 "+"/giveuplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用放棄c次"
+				if not self.isadmin:
+					return "只有群組管理員可以更改此設定"
+				m = re.match(r"/giveuplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
+				if m != None:
+					self.setconfig("giveuptimes", m.group(1))
+					self.setconfig("giveupduration", m.group(2))
+					return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
+				else :
+					return "命令格式錯誤，使用 "+"/giveuplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用放棄c次"
 
 		m = re.match(r"/[^ ]+ ", message)
 		if m != None:
@@ -261,7 +273,12 @@ class TelegramGame(Game):
 		if self.isstart:
 			response = super(TelegramGame, self).guess(message)
 			if not self.isstart:
+				self.delfailguess()
 				response += "\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
+			else :
+				if self.correct == 0:
+					self.addlimit("failguess")
+					response = response.replace("猜錯囉", "猜錯"+str(self.checklimit("failguess", 0))+"次囉")
 			return response
 
 		return ""
