@@ -148,6 +148,7 @@ class TelegramGame(Game):
 		config.read(configpath)
 		self.token = config.get('telegram', 'token')
 		self.botid = config.getint('telegram', 'botid')
+		self.guesstimes = config.getint('telegram', 'guesstimes')
 		self.tiptimes = config.getint('telegram', 'tiptimes')
 		self.tipduration = config.getint('telegram', 'tipduration')
 		self.giveuptimes = config.getint('telegram', 'giveuptimes')
@@ -161,6 +162,7 @@ class TelegramGame(Game):
 			if os.path.isfile(configpath):
 				config = configparser.ConfigParser()
 				config.read(configpath)
+				self.guesstimes = config.getint('limit', 'guesstimes')
 				self.tiptimes = config.getint('limit', 'tiptimes')
 				self.tipduration = config.getint('limit', 'tipduration')
 				self.giveuptimes = config.getint('limit', 'giveuptimes')
@@ -169,6 +171,7 @@ class TelegramGame(Game):
 				config = configparser.ConfigParser()
 				config.read(configpath)
 				config.add_section('limit')
+				config.set('limit', 'guesstimes', str(self.guesstimes))
 				config.set('limit', 'tiptimes', str(self.tiptimes))
 				config.set('limit', 'tipduration', str(self.tipduration))
 				config.set('limit', 'giveuptimes', str(self.giveuptimes))
@@ -187,6 +190,7 @@ class TelegramGame(Game):
 		return self.cur.fetchall()[0][0]
 
 	def checktip(self):
+		tipduration = self.date-self.tipduration
 		count = self.checklimit("tip", tipduration)
 		return count < self.tiptimes
 
@@ -242,12 +246,42 @@ class TelegramGame(Game):
 					return "你的放棄使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.meaning
 
 		if self.isgroup:
+			m = re.match(r"/rule"+self.cmdpostfix+" ", message)
+			if m != None:
+				return "規則：\n"+\
+					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
+					   "每人"+str(self.tipduration)+"秒內可使用提示"+str(self.tiptimes)+"次\n"+\
+					   "每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次"
+
+			m = re.match(r"/guesslimit"+self.cmdpostfix+" ", message)
+			if m != None:
+				if not self.isadmin:
+					return "只有群組管理員可以更改此設定"
+				m = re.match(r"/guesslimit"+self.cmdpostfix+" (\d+) ", message)
+				if m != None:
+					if int(m.group(1)) < 1:
+						return "參數錯誤，至少要為 1"
+					if int(m.group(1)) > 10000:
+						return "參數太大囉"
+					self.setconfig("guesstimes", m.group(1))
+					return "已限制每人每局可以猜錯"+m.group(1)+"次"
+				else :
+					return "命令格式錯誤，使用 "+"/guesslimit"+self.cmdpostfix+" c 限制每人每局可以猜錯c次"
+
 			m = re.match(r"/tiplimit"+self.cmdpostfix+" ", message)
 			if m != None:
 				if not self.isadmin:
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/tiplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
+					if int(m.group(1)) < 1:
+						return "第一個參數錯誤，至少要為 1"
+					if int(m.group(1)) > 10000:
+						return "第一個參數太大囉"
+					if int(m.group(2)) < 1:
+						return "第二個參數錯誤，至少要為 1"
+					if int(m.group(2)) > 100000000:
+						return "第二個參數太大囉"
 					self.setconfig("tiptimes", m.group(1))
 					self.setconfig("tipduration", m.group(2))
 					return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
@@ -260,6 +294,14 @@ class TelegramGame(Game):
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/giveuplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
+					if int(m.group(1)) < 1:
+						return "第一個參數錯誤，至少要為 1"
+					if int(m.group(1)) > 10000:
+						return "第一個參數太大囉"
+					if int(m.group(2)) < 1:
+						return "第二個參數錯誤，至少要為 1"
+					if int(m.group(2)) > 100000000:
+						return "第二個參數太大囉"
 					self.setconfig("giveuptimes", m.group(1))
 					self.setconfig("giveupduration", m.group(2))
 					return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
@@ -271,6 +313,9 @@ class TelegramGame(Game):
 			return ""
 
 		if self.isstart:
+			failguess = self.checklimit("failguess", 0)
+			if self.isgroup and failguess >= self.guesstimes:
+				return ""
 			response = super(TelegramGame, self).guess(message)
 			if not self.isstart:
 				self.delfailguess()
@@ -278,7 +323,10 @@ class TelegramGame(Game):
 			else :
 				if self.correct == 0:
 					self.addlimit("failguess")
-					response = response.replace("猜錯囉", "猜錯"+str(self.checklimit("failguess", 0))+"次囉")
+					if self.isgroup and failguess+1 >= self.guesstimes:
+						response = response.replace("猜錯囉", "你猜錯太多次了，已失去本局遊戲資格")
+					else :
+						response = response.replace("猜錯囉", "猜錯"+str(failguess+1)+"次囉")
 			return response
 
 		return ""
