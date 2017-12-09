@@ -30,19 +30,19 @@ def facebookpost():
 	data = json.loads(request.data.decode("utf8"))
 	if "messaging" in data["entry"][0]:		
 		if "message" in data["entry"][0]["messaging"][0]:
-			userid = data["entry"][0]["messaging"][0]["sender"]["id"]
-			game = FacebookGame(userid)
-			message = data["entry"][0]["messaging"][0]["message"]["text"]
-			if message == "開始":
-				game.sendmessage("？？ 的意思是：\n法律上判決文的第一段，記載判決結果與適用的法律。\n\n放棄遊戲請輸入 放棄")
-			elif message == "判決":
-				game.sendmessage("錯誤")
-			elif message == "主文":
-				game.sendmessage("正確")
-			else :
-				response = game.response(message)
-				game.sendmessage(response)
-
+			if "text" in data["entry"][0]["messaging"][0]["message"]:
+				userid = data["entry"][0]["messaging"][0]["sender"]["id"]
+				game = FacebookGame(userid)
+				message = data["entry"][0]["messaging"][0]["message"]["text"]
+				if message == "開始":
+					game.sendmessage("？？ 的意思是：\n法律上判決文的第一段，記載判決結果與適用的法律。\n\n放棄遊戲請輸入 放棄")
+				elif message == "判決":
+					game.sendmessage("錯誤")
+				elif message == "主文":
+					game.sendmessage("正確")
+				else :
+					response = game.response(message)
+					game.sendmessage(response)
 	return "OK"
 
 @app.route("/telegram", methods=['POST'])
