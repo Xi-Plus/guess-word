@@ -245,8 +245,9 @@ class TelegramGame(Game):
 			m = re.match(r"/tip"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
-				if self.checktip():
-					self.addlimit("tip")
+				if not self.isgroup or self.checktip():
+					if self.isgroup:
+						self.addlimit("tip")
 					return super(TelegramGame, self).tip()
 				else :
 					return "你的提示使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.meaning
