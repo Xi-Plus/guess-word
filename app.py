@@ -60,9 +60,9 @@ def telegram():
 			if "reply_to_message" not in data["message"] and not text.startswith("/"):
 				return "OK"
 			response = game.response(text)
-			if game.isdelusermsg:
-				game.addmessage(data["message"]["message_id"])
 			if response != "":
+				if game.isdelusermsg:
+					game.addmessage(data["message"]["message_id"])
 				game.sendmessage(response, data["message"]["message_id"])
 				if game.isgroup:
 					game.managemessage()
