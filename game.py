@@ -105,20 +105,23 @@ class Game:
 				self.db.commit()
 			else :
 				response = "猜錯囉，「"+newguess+"」的意思是：\n"+self.meaning
+		self.oldguess = newguess
 		return response
 
 	def tip(self):
 		unknown = []
+		unknownchar = []
 		for i in range(len(self.oldguess)):
-			if self.oldguess[i] == "？":
+			if self.oldguess[i] == "？" and self.word[i] not in unknownchar:
 				unknown.append(i)
+				unknownchar.append(self.word[i])
 		if len(unknown) < 2:
 			return "沒有更多提示了，「"+self.oldguess+"」的意思是：\n"+self.meaning
 		else :
 			index = unknown[random.randint(0, len(unknown)-1)]
 			newguess = self.oldguess[:index]+self.word[index]+self.oldguess[index+1:]
 			self.guess(newguess)
-			return "使用提示，「"+newguess+"」的意思是：\n"+self.meaning
+			return "使用提示，「"+self.oldguess+"」的意思是：\n"+self.meaning
 
 	def giveup(self):
 		self.cur.execute("""SELECT `guess`, `word`, `meaning` FROM `guess` WHERE `platform` = %s AND `userid` = %s""",
