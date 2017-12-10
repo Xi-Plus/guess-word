@@ -352,6 +352,21 @@ class TelegramGame(Game):
 				else :
 					return "命令格式錯誤，使用 "+"/delmsg"+self.cmdpostfix+" u b 設定是否刪除使用者及機器人訊息，是為1，否為0"
 
+		m = re.match(r"/search"+self.cmdpostfix+" ", message)
+		if m != None:
+			m = re.match(r"/search"+self.cmdpostfix+" (.+) ", message)
+			if m != None:
+				word = m.group(1)
+				self.cur.execute("""SELECT `meaning` FROM `dictionary` WHERE `word` = %s""",
+					(word) )
+				rows = self.cur.fetchall()
+				if len(rows) == 0:
+					return "找不到「"+word+"」"
+				else :
+					return "「"+word+"」的意思是：\n"+rows[0][0]
+			else :
+				return "命令格式錯誤，使用 "+"/search"+self.cmdpostfix+" word 搜尋word的意思"
+
 		m = re.match(r"/[^ ]+ ", message)
 		if m != None:
 			return ""
