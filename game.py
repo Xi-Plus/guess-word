@@ -74,7 +74,7 @@ class Game:
 		self.meaning = meaning
 		self.oldguess = newguess
 		self.isstart = True
-		return newguess+" 的意思是：\n"+meaning
+		return "「"+newguess+"」的意思是：\n"+meaning
 
 	def guess(self, guess):
 		guess = guess.replace("\n", "").strip()
@@ -181,6 +181,8 @@ class TelegramGame(Game):
 			res = json.loads(res)
 			self.isgroup = True
 			self.isadmin = res["result"]["status"] in ["creator", "administrator"]
+			self.botmsgaction = ""
+			self.botmsgid = ""
 		else :
 			self.isgroup = False
 	
@@ -219,6 +221,7 @@ class TelegramGame(Game):
 
 		m = re.match(r"/start"+self.cmdpostfix+" (.+)?", message)
 		if m != None:
+			self.botmsgaction = "add"
 			length = m.group(1)
 			response = super(TelegramGame, self).start(length)+"\n"
 			if self.userid < 0:
@@ -229,6 +232,7 @@ class TelegramGame(Game):
 		if self.isstart:
 			m = re.match(r"/tip"+self.cmdpostfix+" ", message)
 			if m != None:
+				self.botmsgaction = "add"
 				if self.checktip():
 					self.addlimit("tip")
 					return super(TelegramGame, self).tip()
@@ -240,14 +244,20 @@ class TelegramGame(Game):
 				if not self.isgroup or self.checkgiveup():
 					if self.isgroup:
 						self.addlimit("giveup")
+						self.botmsgaction = "del"
 					self.delfailguess()
-					return super(TelegramGame, self).giveup()+"\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
+					response = super(TelegramGame, self).giveup()
+					response += "，意思是：\n"+self.meaning
+					response += "\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
+					return response
 				else :
+					self.botmsgaction = "add"
 					return "你的放棄使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.meaning
 
 		if self.isgroup:
 			m = re.match(r"/rule"+self.cmdpostfix+" ", message)
 			if m != None:
+				self.botmsgaction = "add"
 				return "規則：\n"+\
 					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
 					   "每人"+str(self.tipduration)+"秒內可使用提示"+str(self.tiptimes)+"次\n"+\
@@ -255,6 +265,7 @@ class TelegramGame(Game):
 
 			m = re.match(r"/guesslimit"+self.cmdpostfix+" ", message)
 			if m != None:
+				self.botmsgaction = "add"
 				if not self.isadmin:
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/guesslimit"+self.cmdpostfix+" (\d+) ", message)
@@ -270,6 +281,7 @@ class TelegramGame(Game):
 
 			m = re.match(r"/tiplimit"+self.cmdpostfix+" ", message)
 			if m != None:
+				self.botmsgaction = "add"
 				if not self.isadmin:
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/tiplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
@@ -290,6 +302,7 @@ class TelegramGame(Game):
 
 			m = re.match(r"/giveuplimit"+self.cmdpostfix+" ", message)
 			if m != None:
+				self.botmsgaction = "add"
 				if not self.isadmin:
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/giveuplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
@@ -319,8 +332,12 @@ class TelegramGame(Game):
 			response = super(TelegramGame, self).guess(message)
 			if not self.isstart:
 				self.delfailguess()
+				if self.isgroup:
+					self.botmsgaction = "del"
+				response += "，意思是：\n"+self.meaning
 				response += "\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
 			else :
+				self.botmsgaction = "add"
 				if self.correct == 0:
 					self.addlimit("failguess")
 					if self.isgroup and failguess+1 >= self.guesstimes:
@@ -335,9 +352,38 @@ class TelegramGame(Game):
 		self.log("send:"+message)
 		try:
 			url = "https://api.telegram.org/bot"+self.token+"/sendMessage?chat_id="+str(self.userid)+"&reply_to_message_id="+str(reply_to_message_id)+"&text="+urllib.parse.quote_plus(message.encode())
-			urllib.request.urlopen(url)
+			res = urllib.request.urlopen(url).read().decode("utf8")
+			res = json.loads(res)
+			if res["ok"]:
+				self.botmsgid = res["result"]["message_id"]
 		except urllib.error.HTTPError as e:
-			self.log("error:"+str(e.code)+" "+str(e.hdrs))
+			self.log("send msg error:"+str(e.code)+" "+str(e.hdrs))
+
+	def botmsg(self):
+		if self.botmsgaction == "add":
+			self.addbotmsg()
+		elif self.botmsgaction == "del":
+			self.delbotmsg()
+
+	def addbotmsg(self):
+		if self.isgroup:
+			self.cur.execute("""INSERT INTO `tggroupbotmsg` (`userid`, `messageid`) VALUES (%s, %s)""",
+				(self.userid, self.botmsgid) )
+			self.db.commit()
+
+	def delbotmsg(self):
+		self.cur.execute("""SELECT `messageid` FROM `tggroupbotmsg` WHERE `userid` = %s""",
+			(self.userid) )
+		rows = self.cur.fetchall()
+		for row in rows:
+			try:
+				url = "https://api.telegram.org/bot"+self.token+"/deleteMessage?chat_id="+str(self.userid)+"&message_id="+row[0]
+				urllib.request.urlopen(url)
+			except urllib.error.HTTPError as e:
+				self.log("del msg error:"+str(e.code)+" "+str(e.hdrs))
+		self.cur.execute("""DELETE FROM `tggroupbotmsg` WHERE `userid` = %s""",
+			(self.userid) )
+		self.db.commit()
 
 class LineGame(Game):
 	def __init__(self, userid, replytoken):

@@ -31,6 +31,11 @@ CREATE TABLE `log` (
   `time` timestamp NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
 
+CREATE TABLE `tggroupbotmsg` (
+  `userid` varchar(20) COLLATE utf8_bin NOT NULL,
+  `messageid` varchar(20) COLLATE utf8_bin NOT NULL
+) ENGINE=InnoDB DEFAULT CHARSET=utf8 COLLATE=utf8_bin;
+
 CREATE TABLE `tggrouplimit` (
   `userid` varchar(20) COLLATE utf8_bin NOT NULL,
   `fromid` varchar(20) COLLATE utf8_bin NOT NULL,

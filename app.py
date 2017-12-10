@@ -59,6 +59,7 @@ def telegram():
 			response = game.response(data["message"]["text"])
 			if response != "":
 				game.sendmessage(response, data["message"]["message_id"])
+				game.botmsg()
 			return "OK"
 	return "OK"
 
