@@ -53,10 +53,13 @@ def telegram():
 			userid = data["message"]["chat"]["id"]
 			fromid = data["message"]["from"]["id"]
 			date = data["message"]["date"]
+			text = data["message"]["text"]
 			game = TelegramGame(userid, fromid, date)
 			if "reply_to_message" in data["message"] and data["message"]["reply_to_message"]["from"]["id"] != game.botid:
 				return "OK"
-			response = game.response(data["message"]["text"])
+			if "reply_to_message" not in data["message"] and not text.startswith("/"):
+				return "OK"
+			response = game.response(text)
 			if game.isdelusermsg:
 				game.addmessage(data["message"]["message_id"])
 			if response != "":
