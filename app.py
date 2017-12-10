@@ -57,9 +57,11 @@ def telegram():
 			if "reply_to_message" in data["message"] and data["message"]["reply_to_message"]["from"]["id"] != game.botid:
 				return "OK"
 			response = game.response(data["message"]["text"])
+			if game.isdelusermsg:
+				game.addmessage(data["message"]["message_id"])
 			if response != "":
 				game.sendmessage(response, data["message"]["message_id"])
-				game.botmsg()
+				game.managemessage()
 			return "OK"
 	return "OK"
 

@@ -153,6 +153,8 @@ class TelegramGame(Game):
 		self.tipduration = config.getint('telegram', 'tipduration')
 		self.giveuptimes = config.getint('telegram', 'giveuptimes')
 		self.giveupduration = config.getint('telegram', 'giveupduration')
+		self.isdelusermsg = config.getboolean('telegram', 'isdelusermsg')
+		self.isdelbotmsg = config.getboolean('telegram', 'isdelbotmsg')
 		if int(userid) > 0:
 			self.cmdpostfix = ""
 		else :
@@ -167,6 +169,8 @@ class TelegramGame(Game):
 				self.tipduration = config.getint('limit', 'tipduration')
 				self.giveuptimes = config.getint('limit', 'giveuptimes')
 				self.giveupduration = config.getint('limit', 'giveupduration')
+				self.isdelusermsg = config.getboolean('limit', 'isdelusermsg')
+				self.isdelbotmsg = config.getboolean('limit', 'isdelbotmsg')
 			else :
 				config = configparser.ConfigParser()
 				config.read(configpath)
@@ -176,11 +180,16 @@ class TelegramGame(Game):
 				config.set('limit', 'tipduration', str(self.tipduration))
 				config.set('limit', 'giveuptimes', str(self.giveuptimes))
 				config.set('limit', 'giveupduration', str(self.giveupduration))
+				config.set('limit', 'giveupduration', str(self.isdelusermsg))
+				config.set('limit', 'giveupduration', str(self.isdelbotmsg))
 				config.write(open(configpath, 'w'))
 			res = urllib.request.urlopen('https://api.telegram.org/bot'+self.token+'/getChatMember?chat_id='+str(self.userid)+'&user_id='+str(self.fromid)).read().decode("utf8")
 			res = json.loads(res)
-			self.isgroup = True
 			self.isadmin = res["result"]["status"] in ["creator", "administrator"]
+			res = urllib.request.urlopen('https://api.telegram.org/bot'+self.token+'/getChatMember?chat_id='+str(self.userid)+'&user_id='+str(self.botid)).read().decode("utf8")
+			res = json.loads(res)
+			self.isbotisadmin = (res["result"]["status"] == "administrator" and res["result"]["can_delete_messages"])
+			self.isgroup = True
 			self.botmsgaction = ""
 			self.botmsgid = ""
 		else :
@@ -261,7 +270,8 @@ class TelegramGame(Game):
 				return "規則：\n"+\
 					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
 					   "每人"+str(self.tipduration)+"秒內可使用提示"+str(self.tiptimes)+"次\n"+\
-					   "每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次"
+					   "每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次\n"+\
+					   "刪除使用者訊息："+str(self.isdelusermsg)+"；刪除機器人訊息："+str(self.isdelbotmsg)
 
 			m = re.match(r"/guesslimit"+self.cmdpostfix+" ", message)
 			if m != None:
@@ -321,6 +331,27 @@ class TelegramGame(Game):
 				else :
 					return "命令格式錯誤，使用 "+"/giveuplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用放棄c次"
 
+			m = re.match(r"/delmsg"+self.cmdpostfix+" ", message)
+			if m != None:
+				self.botmsgaction = "add"
+				if not self.isadmin:
+					return "只有群組管理員可以更改此設定"
+				m = re.match(r"/delmsg"+self.cmdpostfix+" (\d+) (\d+) ", message)
+				if m != None:
+					response = ""
+					isdelusermsg = bool(int(m.group(1)))
+					if isdelusermsg and not self.isbotisadmin:
+						isdelusermsg = False
+						response += "機器人非管理員，無法刪除使用者訊息，請先給予刪除訊息權限"
+					isdelusermsg = str(isdelusermsg)
+					isdelbotmsg = str(bool(int(m.group(2))))
+					self.setconfig("isdelusermsg", isdelusermsg)
+					self.setconfig("isdelbotmsg", isdelbotmsg)
+					response += "已設定刪除使用者訊息："+isdelusermsg+"；刪除機器人訊息："+isdelbotmsg
+					return response
+				else :
+					return "命令格式錯誤，使用 "+"/delmsg"+self.cmdpostfix+" u b 設定是否刪除使用者及機器人訊息，是為1，否為0"
+
 		m = re.match(r"/[^ ]+ ", message)
 		if m != None:
 			return ""
@@ -359,19 +390,20 @@ class TelegramGame(Game):
 		except urllib.error.HTTPError as e:
 			self.log("send msg error:"+str(e.code)+" "+str(e.hdrs))
 
-	def botmsg(self):
+	def managemessage(self):
 		if self.botmsgaction == "add":
-			self.addbotmsg()
+			if self.isdelbotmsg:
+				self.addmessage(self.botmsgid)
 		elif self.botmsgaction == "del":
-			self.delbotmsg()
+			self.deletemessage()
 
-	def addbotmsg(self):
+	def addmessage(self, messageid):
 		if self.isgroup:
 			self.cur.execute("""INSERT INTO `tggroupbotmsg` (`userid`, `messageid`) VALUES (%s, %s)""",
-				(self.userid, self.botmsgid) )
+				(self.userid, messageid) )
 			self.db.commit()
 
-	def delbotmsg(self):
+	def deletemessage(self):
 		self.cur.execute("""SELECT `messageid` FROM `tggroupbotmsg` WHERE `userid` = %s""",
 			(self.userid) )
 		rows = self.cur.fetchall()
