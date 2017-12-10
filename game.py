@@ -90,6 +90,7 @@ class Game:
 				self.correct += 1
 			else :
 				newguess += "？"
+		self.meaning = self.meaning.replace(self.oldguess, newguess)
 		if newguess == self.word:
 			response = "恭喜猜中了，答案是「"+self.word+"」"
 			self.cur.execute("""DELETE FROM `guess` WHERE `platform` = %s AND `userid` = %s""",
@@ -97,7 +98,6 @@ class Game:
 			self.db.commit()
 			self.isstart = False
 		else :
-			self.meaning = self.meaning.replace(self.oldguess, newguess)
 			if self.oldguess != newguess:
 				response = "快要猜中囉，「"+newguess+"」的意思是：\n"+self.meaning
 				self.cur.execute("""UPDATE `guess` SET `guess` = %s, `meaning` = %s WHERE `platform` = %s AND `userid` = %s""",
@@ -442,14 +442,11 @@ class FacebookGame(Game):
 	def sendmessage(self, message):
 		self.log(message)
 		url = "https://graph.facebook.com/v2.7/me/messages"
-		print(url)
 		data = {'access_token': self.token,
 				'recipient': {"id": self.userid},
 				'message': {"text": message}
 				}
-		print(data)
 		req = urllib.request.Request(url, urllib.parse.urlencode(data).encode())
-		print(req)
 		try:
 			res = urllib.request.urlopen(req)
 		except urllib.error.HTTPError as e:
