@@ -60,7 +60,7 @@ class Game:
 		word = row[0]
 		newguess = ""
 		for i in range(len(word)):
-			if word[i] in "，。、；「」～〜★":
+			if word[i] in "，。、；「」～〜★˙":
 				newguess += word[i]
 			else :
 				newguess += "？"
