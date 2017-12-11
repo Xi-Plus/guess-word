@@ -268,15 +268,6 @@ class TelegramGame(Game):
 					return "你的放棄使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.meaning
 
 		if self.isgroup:
-			m = re.match(r"/rule"+self.cmdpostfix+" ", message)
-			if m != None:
-				self.botmsgaction = "add"
-				return "規則：\n"+\
-					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
-					   "每人"+str(self.tipduration)+"秒內可使用提示"+str(self.tiptimes)+"次\n"+\
-					   "每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次\n"+\
-					   "刪除使用者訊息："+str(self.isdelusermsg)+"；刪除機器人訊息："+str(self.isdelbotmsg)
-
 			m = re.match(r"/guesslimit"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
@@ -291,7 +282,7 @@ class TelegramGame(Game):
 					self.setconfig("guesstimes", m.group(1))
 					return "已限制每人每局可以猜錯"+m.group(1)+"次"
 				else :
-					return "命令格式錯誤，使用 "+"/guesslimit"+self.cmdpostfix+" c 限制每人每局可以猜錯c次"
+					return "命令使用方法： "+"/guesslimit"+self.cmdpostfix+" c 限制每人每局可以猜錯c次"
 
 			m = re.match(r"/tiplimit"+self.cmdpostfix+" ", message)
 			if m != None:
@@ -312,7 +303,7 @@ class TelegramGame(Game):
 					self.setconfig("tipduration", m.group(2))
 					return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
 				else :
-					return "命令格式錯誤，使用 "+"/tiplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用提示c次"
+					return "命令使用方法： "+"/tiplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用提示c次"
 
 			m = re.match(r"/giveuplimit"+self.cmdpostfix+" ", message)
 			if m != None:
@@ -333,7 +324,7 @@ class TelegramGame(Game):
 					self.setconfig("giveupduration", m.group(2))
 					return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
 				else :
-					return "命令格式錯誤，使用 "+"/giveuplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用放棄c次"
+					return "命令使用方法： "+"/giveuplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用放棄c次"
 
 			m = re.match(r"/delmsg"+self.cmdpostfix+" ", message)
 			if m != None:
@@ -354,7 +345,34 @@ class TelegramGame(Game):
 					response += "已設定刪除使用者訊息："+isdelusermsg+"；刪除機器人訊息："+isdelbotmsg
 					return response
 				else :
-					return "命令格式錯誤，使用 "+"/delmsg"+self.cmdpostfix+" u b 設定是否刪除使用者及機器人訊息，是為1，否為0"
+					return "命令使用方法： "+"/delmsg"+self.cmdpostfix+" u b 設定是否刪除使用者及機器人訊息，是為1，否為0"
+
+		m = re.match(r"/help"+self.cmdpostfix+" ", message)
+		if m != None:
+			response = "/start 開始遊戲\n"+\
+					   "/tip 提示\n"+\
+					   "/giveup 放棄遊戲\n"
+			if self.isgroup:
+				self.botmsgaction = "add"
+				response += "/settings 查看規則\n"+\
+							"/guesslimit 設定猜測錯誤次數限制 (僅群管可用)\n"+\
+							"/tiplimit 設定提示次數限制 (僅群管可用)\n"+\
+							"/giveuplimit 設定放棄次數限制 (僅群管可用)\n"+\
+							"/delmsg 設定是否刪除使用者及機器人訊息 (僅群管可用)\n"
+			return response
+
+		m = re.match(r"/settings"+self.cmdpostfix+" ", message)
+		if m != None:
+			if self.isgroup:
+				self.botmsgaction = "add"
+				return "設定：\n"+\
+					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
+					   "每人"+str(self.tipduration)+"秒內可使用提示"+str(self.tiptimes)+"次\n"+\
+					   "每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次\n"+\
+					   "刪除使用者訊息："+str(self.isdelusermsg)+"；刪除機器人訊息："+str(self.isdelbotmsg)+"\n"+\
+					   "使用 /help"+self.cmdpostfix+" 查看更改設定用指令"
+			else :
+				return "私訊模式中沒有可用設定"
 
 		m = re.match(r"/search"+self.cmdpostfix+" ", message)
 		if m != None:
@@ -369,7 +387,22 @@ class TelegramGame(Game):
 				else :
 					return "「"+word+"」的意思是：\n"+rows[0][0]
 			else :
-				return "命令格式錯誤，使用 "+"/search"+self.cmdpostfix+" word 搜尋word的意思"
+				return "命令使用方法： "+"/search"+self.cmdpostfix+" word 搜尋word的意思"
+
+		m = re.match(r"/search"+self.cmdpostfix+" ", message)
+		if m != None:
+			m = re.match(r"/search"+self.cmdpostfix+" (.+) ", message)
+			if m != None:
+				word = m.group(1)
+				self.cur.execute("""SELECT `meaning` FROM `dictionary` WHERE `word` = %s""",
+					(word) )
+				rows = self.cur.fetchall()
+				if len(rows) == 0:
+					return "找不到「"+word+"」"
+				else :
+					return "「"+word+"」的意思是：\n"+rows[0][0]
+			else :
+				return "命令使用方法： "+"/search"+self.cmdpostfix+" word 搜尋word的意思"
 
 		m = re.match(r"/[^ ]+ ", message)
 		if m != None:
