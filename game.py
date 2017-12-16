@@ -66,6 +66,7 @@ class Game:
 				newguess += "？"
 		meaning = row[1]
 		meaning = meaning.replace(word, newguess)
+		meaning = re.sub(r"&(.+?\.gif);", r"�( http://dict.revised.moe.edu.tw/cbdic/cfont/\1 )", meaning)
 		self.cur.execute("""INSERT INTO `guess` (`platform`, `userid`, `guess`, `word`, `meaning`) VALUES (%s, %s, %s, %s, %s)""",
 			(self.platform, self.userid, newguess, word, meaning) )
 		self.db.commit()
@@ -236,6 +237,7 @@ class TelegramGame(Game):
 			self.botmsgaction = "add"
 			length = m.group(1)
 			response = super(TelegramGame, self).start(length)+"\n"
+			response = self.badchar(response)
 			if self.userid < 0:
 				response += "回答需Reply，"
 			response += "提示請輸入 /tip ，放棄請輸入 /giveup"
@@ -248,9 +250,9 @@ class TelegramGame(Game):
 				if not self.isgroup or self.checktip():
 					if self.isgroup:
 						self.addlimit("tip")
-					return super(TelegramGame, self).tip()
+					return self.badchar(super(TelegramGame, self).tip())
 				else :
-					return "你的提示使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.meaning
+					return "你的提示使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.badchar(self.meaning)
 
 			m = re.match(r"/giveup"+self.cmdpostfix+" ", message)
 			if m != None:
@@ -260,7 +262,7 @@ class TelegramGame(Game):
 						self.botmsgaction = "del"
 					self.delfailguess()
 					response = super(TelegramGame, self).giveup()
-					response += "，意思是：\n"+self.meaning
+					response += "，意思是：\n"+self.badchar(self.meaning)
 					response += "\n開始新遊戲請輸入 /start"+self.cmdpostfix+"\n或 /start"+self.cmdpostfix+" n 限定答案n個字"
 					return response
 				else :
@@ -385,7 +387,7 @@ class TelegramGame(Game):
 				if len(rows) == 0:
 					return "找不到「"+word+"」"
 				else :
-					return "「"+word+"」的意思是：\n"+rows[0][0]
+					return "「"+word+"」的意思是：\n"+re.sub(r"&(.+?\.gif);", r"[�](http://dict.revised.moe.edu.tw/cbdic/cfont/\1)", rows[0][0])
 			else :
 				return "命令使用方法： "+"/search"+self.cmdpostfix+" word 搜尋word的意思"
 
@@ -397,7 +399,7 @@ class TelegramGame(Game):
 			failguess = self.checklimit("failguess", 0)
 			if self.isgroup and failguess >= self.guesstimes:
 				return ""
-			response = super(TelegramGame, self).guess(message)
+			response = self.badchar(super(TelegramGame, self).guess(message))
 			if not self.isstart:
 				self.delfailguess()
 				if self.isgroup:
@@ -416,10 +418,13 @@ class TelegramGame(Game):
 
 		return ""
 
+	def badchar(self, text):
+		return re.sub(r"�\( (.+?) \)", r"[�](\1)", text)
+
 	def sendmessage(self, message, reply_to_message_id):
 		self.log("send:"+message)
 		try:
-			url = "https://api.telegram.org/bot"+self.token+"/sendMessage?chat_id="+str(self.userid)+"&reply_to_message_id="+str(reply_to_message_id)+"&text="+urllib.parse.quote_plus(message.encode())
+			url = "https://api.telegram.org/bot"+self.token+"/sendMessage?chat_id="+str(self.userid)+"&reply_to_message_id="+str(reply_to_message_id)+"&parse_mode=Markdown&disable_web_page_preview=1&text="+urllib.parse.quote_plus(message.encode())
 			res = urllib.request.urlopen(url).read().decode("utf8")
 			res = json.loads(res)
 			if res["ok"]:
