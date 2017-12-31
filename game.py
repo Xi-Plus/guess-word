@@ -109,7 +109,7 @@ class Game:
 		self.oldguess = newguess
 		return response
 
-	def tip(self):
+	def hint(self):
 		unknown = []
 		unknownchar = []
 		for i in range(len(self.oldguess)):
@@ -153,8 +153,8 @@ class TelegramGame(Game):
 		self.token = config.get('telegram', 'token')
 		self.botid = config.getint('telegram', 'botid')
 		self.guesstimes = config.getint('telegram', 'guesstimes')
-		self.tiptimes = config.getint('telegram', 'tiptimes')
-		self.tipduration = config.getint('telegram', 'tipduration')
+		self.hinttimes = config.getint('telegram', 'hinttimes')
+		self.hintduration = config.getint('telegram', 'hintduration')
 		self.giveuptimes = config.getint('telegram', 'giveuptimes')
 		self.giveupduration = config.getint('telegram', 'giveupduration')
 		self.isdelusermsg = config.getboolean('telegram', 'isdelusermsg')
@@ -169,8 +169,8 @@ class TelegramGame(Game):
 				config = configparser.ConfigParser()
 				config.read(configpath)
 				self.guesstimes = config.getint('limit', 'guesstimes')
-				self.tiptimes = config.getint('limit', 'tiptimes')
-				self.tipduration = config.getint('limit', 'tipduration')
+				self.hinttimes = config.getint('limit', 'hinttimes')
+				self.hintduration = config.getint('limit', 'hintduration')
 				self.giveuptimes = config.getint('limit', 'giveuptimes')
 				self.giveupduration = config.getint('limit', 'giveupduration')
 				self.isdelusermsg = config.getboolean('limit', 'isdelusermsg')
@@ -180,8 +180,8 @@ class TelegramGame(Game):
 				config.read(configpath)
 				config.add_section('limit')
 				config.set('limit', 'guesstimes', str(self.guesstimes))
-				config.set('limit', 'tiptimes', str(self.tiptimes))
-				config.set('limit', 'tipduration', str(self.tipduration))
+				config.set('limit', 'hinttimes', str(self.hinttimes))
+				config.set('limit', 'hintduration', str(self.hintduration))
 				config.set('limit', 'giveuptimes', str(self.giveuptimes))
 				config.set('limit', 'giveupduration', str(self.giveupduration))
 				config.set('limit', 'isdelusermsg', str(self.isdelusermsg))
@@ -204,10 +204,10 @@ class TelegramGame(Game):
 			(self.userid, self.fromid, type, date) )
 		return self.cur.fetchall()[0][0]
 
-	def checktip(self):
-		tipduration = self.date-self.tipduration
-		count = self.checklimit("tip", tipduration)
-		return count < self.tiptimes
+	def checkhint(self):
+		hintduration = self.date-self.hintduration
+		count = self.checklimit("hint", hintduration)
+		return count < self.hinttimes
 
 	def checkgiveup(self):
 		giveupduration = self.date-self.giveupduration
@@ -240,17 +240,17 @@ class TelegramGame(Game):
 			response = self.badchar(response)
 			if self.userid < 0:
 				response += "回答需Reply，"
-			response += "提示請輸入 /tip ，放棄請輸入 /giveup"
+			response += "提示請輸入 /hint ，放棄請輸入 /giveup"
 			return response
 
 		if self.isstart:
-			m = re.match(r"/tip"+self.cmdpostfix+" ", message)
+			m = re.match(r"/hint"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
-				if not self.isgroup or self.checktip():
+				if not self.isgroup or self.checkhint():
 					if self.isgroup:
-						self.addlimit("tip")
-					return self.badchar(super(TelegramGame, self).tip())
+						self.addlimit("hint")
+					return self.badchar(super(TelegramGame, self).hint())
 				else :
 					return "你的提示使用次數已達上限，「"+self.oldguess+"」的意思是：\n"+self.badchar(self.meaning)
 
@@ -286,12 +286,12 @@ class TelegramGame(Game):
 				else :
 					return "命令使用方法： "+"/guesslimit"+self.cmdpostfix+" c 限制每人每局可以猜錯c次"
 
-			m = re.match(r"/tiplimit"+self.cmdpostfix+" ", message)
+			m = re.match(r"/hintlimit"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
 				if not self.isadmin:
 					return "只有群組管理員可以更改此設定"
-				m = re.match(r"/tiplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
+				m = re.match(r"/hintlimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
 					if int(m.group(1)) < 1:
 						return "第一個參數錯誤，至少要為 1"
@@ -301,11 +301,11 @@ class TelegramGame(Game):
 						return "第二個參數錯誤，至少要為 1"
 					if int(m.group(2)) > 100000000:
 						return "第二個參數太大囉"
-					self.setconfig("tiptimes", m.group(1))
-					self.setconfig("tipduration", m.group(2))
+					self.setconfig("hinttimes", m.group(1))
+					self.setconfig("hintduration", m.group(2))
 					return "已限制每人"+m.group(2)+"秒內最多可以使用提示"+m.group(1)+"次"
 				else :
-					return "命令使用方法： "+"/tiplimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用提示c次"
+					return "命令使用方法： "+"/hintlimit"+self.cmdpostfix+" c t 限制t秒內最多可以使用提示c次"
 
 			m = re.match(r"/giveuplimit"+self.cmdpostfix+" ", message)
 			if m != None:
@@ -352,13 +352,13 @@ class TelegramGame(Game):
 		m = re.match(r"/help"+self.cmdpostfix+" ", message)
 		if m != None:
 			response = "/start 開始遊戲\n"+\
-					   "/tip 提示\n"+\
+					   "/hint 提示\n"+\
 					   "/giveup 放棄遊戲\n"
 			if self.isgroup:
 				self.botmsgaction = "add"
 				response += "/settings 查看規則\n"+\
 							"/guesslimit 設定猜測錯誤次數限制 (僅群管可用)\n"+\
-							"/tiplimit 設定提示次數限制 (僅群管可用)\n"+\
+							"/hintlimit 設定提示次數限制 (僅群管可用)\n"+\
 							"/giveuplimit 設定放棄次數限制 (僅群管可用)\n"+\
 							"/delmsg 設定是否刪除使用者及機器人訊息 (僅群管可用)\n"
 			return response
@@ -369,7 +369,7 @@ class TelegramGame(Game):
 				self.botmsgaction = "add"
 				return "設定：\n"+\
 					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
-					   "每人"+str(self.tipduration)+"秒內可使用提示"+str(self.tiptimes)+"次\n"+\
+					   "每人"+str(self.hintduration)+"秒內可使用提示"+str(self.hinttimes)+"次\n"+\
 					   "每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次\n"+\
 					   "刪除使用者訊息："+str(self.isdelusermsg)+"；刪除機器人訊息："+str(self.isdelbotmsg)+"\n"+\
 					   "使用 /help"+self.cmdpostfix+" 查看更改設定用指令"
@@ -477,7 +477,7 @@ class LineGame(Game):
 			if self.isstart and message.strip() == "放棄":
 				response = super(LineGame, self).giveup()+"\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
 			elif self.isstart and message.strip() == "提示":
-				response = super(LineGame, self).tip()
+				response = super(LineGame, self).hint()
 			elif not self.isstart:
 				response += "\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
 		else :
@@ -506,7 +506,7 @@ class FacebookGame(Game):
 			if self.isstart and message.strip() == "放棄":
 				response = super(FacebookGame, self).giveup()+"\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
 			elif self.isstart and message.strip() == "提示":
-				response = super(FacebookGame, self).tip()
+				response = super(FacebookGame, self).hint()
 			elif not self.isstart:
 				response += "\n\n繼續遊戲請輸入任意文字\n或輸入數字限定答案字數"
 		else :
