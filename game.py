@@ -457,7 +457,7 @@ class TelegramGame(Game):
 				url = "https://api.telegram.org/bot"+self.token+"/deleteMessage?chat_id="+str(self.userid)+"&message_id="+row[0]
 				urllib.request.urlopen(url)
 			except urllib.error.HTTPError as e:
-				self.log("del msg error:"+str(e.code)+" "+str(e.hdrs))
+				self.log("del msg error:"+str(e.code)+" "+str(e.read().decode("utf-8")))
 
 class LineGame(Game):
 	def __init__(self, userid, replytoken):
@@ -524,4 +524,4 @@ class FacebookGame(Game):
 		try:
 			res = urllib.request.urlopen(req)
 		except urllib.error.HTTPError as e:
-			self.log("error:"+str(e.code)+" "+str(e.hdrs))
+			self.log("error:"+str(e.code)+" "+str(e.read().decode("utf-8")))
