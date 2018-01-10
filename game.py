@@ -293,8 +293,8 @@ class TelegramGame(Game):
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/hintlimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
-					if int(m.group(1)) < 1:
-						return "第一個參數錯誤，至少要為 1"
+					if int(m.group(1)) < 0:
+						return "第一個參數錯誤，至少要為 0"
 					if int(m.group(1)) > 10000:
 						return "第一個參數太大囉"
 					if int(m.group(2)) < 1:
@@ -314,8 +314,8 @@ class TelegramGame(Game):
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/giveuplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
-					if int(m.group(1)) < 1:
-						return "第一個參數錯誤，至少要為 1"
+					if int(m.group(1)) < 0:
+						return "第一個參數錯誤，至少要為 0"
 					if int(m.group(1)) > 10000:
 						return "第一個參數太大囉"
 					if int(m.group(2)) < 1:
@@ -369,8 +369,8 @@ class TelegramGame(Game):
 				self.botmsgaction = "add"
 				return "設定：\n"+\
 					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
-					   "每人"+str(self.hintduration)+"秒內可使用提示"+str(self.hinttimes)+"次\n"+\
-					   "每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次\n"+\
+					   ("每人"+str(self.hintduration)+"秒內可使用提示"+str(self.hinttimes)+"次\n" if self.hinttimes > 0 else "禁止使用提示\n")+\
+					   ("每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次\n" if self.giveuptimes > 0 else "禁止使用放棄\n")+\
 					   "刪除使用者訊息："+str(self.isdelusermsg)+"；刪除機器人訊息："+str(self.isdelbotmsg)+"\n"+\
 					   "使用 /help"+self.cmdpostfix+" 查看更改設定用指令"
 			else :
