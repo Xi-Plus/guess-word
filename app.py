@@ -50,7 +50,7 @@ def telegram():
 			game = TelegramGame(userid, fromid, date)
 			if "reply_to_message" in data["message"] and data["message"]["reply_to_message"]["from"]["id"] != game.botid:
 				return "OK"
-			if "reply_to_message" not in data["message"] and not text.startswith("/"):
+			if "reply_to_message" not in data["message"] and not text.startswith("/") and game.isgroup:
 				return "OK"
 			response = game.response(text)
 			if response != "":
