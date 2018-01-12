@@ -1,7 +1,7 @@
 # guess-word
 詞義高手 - 推敲辭義，贏得勝利，提升你的國文造詣
 
-## 安裝
+## Installation
 1. 下載此專案
 2. 建立資料庫，格式於```database.sql```
 3. 至 Apache config 設定 WSGIScriptAlias 至 ```guess_word.wsgi``` 的路徑
