@@ -423,7 +423,7 @@ class TelegramGame(Game):
 		return re.sub(r"�\( (.+?) \)", r"[�](\1)", text)
 
 	def sendmessage(self, message, reply_to_message_id):
-		self.log("send:"+message)
+		self.log("send "+str(self.userid)+" "+message)
 		try:
 			url = "https://api.telegram.org/bot"+self.token+"/sendMessage?chat_id="+str(self.userid)+"&reply_to_message_id="+str(reply_to_message_id)+"&parse_mode=Markdown&disable_web_page_preview=1&text="+urllib.parse.quote_plus(message.encode())
 			res = urllib.request.urlopen(url).read().decode("utf8")
@@ -431,7 +431,7 @@ class TelegramGame(Game):
 			if res["ok"]:
 				self.botmsgid = res["result"]["message_id"]
 		except urllib.error.HTTPError as e:
-			self.log("send msg error:"+str(e.code)+" "+str(e.hdrs))
+			self.log("send msg error:"+str(e.code)+" "+str(e.read().decode("utf-8")))
 
 	def managemessage(self):
 		if self.botmsgaction == "add":
