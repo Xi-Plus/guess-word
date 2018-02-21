@@ -399,7 +399,7 @@ class TelegramGame(Game):
 			failguess = self.checklimit("failguess", 0)
 			if self.isgroup and failguess >= self.guesstimes:
 				return ""
-			response = self.badchar(super(TelegramGame, self).guess(message))
+			response = super(TelegramGame, self).guess(message)
 			if not self.isstart:
 				self.delfailguess()
 				if self.isgroup:
@@ -414,6 +414,7 @@ class TelegramGame(Game):
 						response = response.replace("猜錯囉", "你猜錯太多次了，已失去本局遊戲資格")
 					else :
 						response = response.replace("猜錯囉", "猜錯"+str(failguess+1)+"次囉")
+			response = self.badchar(response)
 			return response
 
 		return ""
