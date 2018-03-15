@@ -378,6 +378,7 @@ class TelegramGame(Game):
 
 		m = re.match(r"/search"+self.cmdpostfix+" ", message)
 		if m != None:
+			self.botmsgaction = "add"
 			m = re.match(r"/search"+self.cmdpostfix+" (.+) ", message)
 			if m != None:
 				word = m.group(1)
