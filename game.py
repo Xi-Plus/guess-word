@@ -187,18 +187,22 @@ class TelegramGame(Game):
 				config.set('limit', 'isdelusermsg', str(self.isdelusermsg))
 				config.set('limit', 'isdelbotmsg', str(self.isdelbotmsg))
 				config.write(open(configpath, 'w'))
-			res = urllib.request.urlopen('https://api.telegram.org/bot'+self.token+'/getChatMember?chat_id='+str(self.userid)+'&user_id='+str(self.fromid)).read().decode("utf8")
-			res = json.loads(res)
-			self.isadmin = res["result"]["status"] in ["creator", "administrator"]
-			res = urllib.request.urlopen('https://api.telegram.org/bot'+self.token+'/getChatMember?chat_id='+str(self.userid)+'&user_id='+str(self.botid)).read().decode("utf8")
-			res = json.loads(res)
-			self.isbotisadmin = (res["result"]["status"] == "administrator" and res["result"]["can_delete_messages"])
 			self.isgroup = True
 			self.botmsgaction = ""
 			self.botmsgid = ""
 		else :
 			self.isgroup = False
 	
+	def isadmin(self):
+		res = urllib.request.urlopen('https://api.telegram.org/bot'+self.token+'/getChatMember?chat_id='+str(self.userid)+'&user_id='+str(self.fromid)).read().decode("utf8")
+		res = json.loads(res)
+		return res["result"]["status"] in ["creator", "administrator"]
+
+	def isbotisadmin(self):
+		res = urllib.request.urlopen('https://api.telegram.org/bot'+self.token+'/getChatMember?chat_id='+str(self.userid)+'&user_id='+str(self.botid)).read().decode("utf8")
+		res = json.loads(res)
+		return (res["result"]["status"] == "administrator" and res["result"]["can_delete_messages"])
+
 	def checklimit(self, type, date):
 		self.cur.execute("""SELECT COUNT(*) FROM `tggrouplimit` WHERE `userid` = %s AND `fromid` = %s AND `type` = %s AND `date` > %s""",
 			(self.userid, self.fromid, type, date) )
@@ -273,7 +277,7 @@ class TelegramGame(Game):
 			m = re.match(r"/guesslimit"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
-				if not self.isadmin:
+				if not self.isadmin():
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/guesslimit"+self.cmdpostfix+" (\d+) ", message)
 				if m != None:
@@ -289,7 +293,7 @@ class TelegramGame(Game):
 			m = re.match(r"/hintlimit"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
-				if not self.isadmin:
+				if not self.isadmin():
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/hintlimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
@@ -310,7 +314,7 @@ class TelegramGame(Game):
 			m = re.match(r"/giveuplimit"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
-				if not self.isadmin:
+				if not self.isadmin():
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/giveuplimit"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
@@ -331,13 +335,13 @@ class TelegramGame(Game):
 			m = re.match(r"/delmsg"+self.cmdpostfix+" ", message)
 			if m != None:
 				self.botmsgaction = "add"
-				if not self.isadmin:
+				if not self.isadmin():
 					return "只有群組管理員可以更改此設定"
 				m = re.match(r"/delmsg"+self.cmdpostfix+" (\d+) (\d+) ", message)
 				if m != None:
 					response = ""
 					isdelusermsg = bool(int(m.group(1)))
-					if isdelusermsg and not self.isbotisadmin:
+					if isdelusermsg and not self.isbotisadmin():
 						isdelusermsg = False
 						response += "機器人非管理員，無法刪除使用者訊息，請先給予刪除訊息權限"
 					isdelusermsg = str(isdelusermsg)
