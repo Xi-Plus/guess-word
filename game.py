@@ -396,8 +396,7 @@ class TelegramGame(Game):
 			else :
 				return "命令使用方法： "+"/search"+self.cmdpostfix+" word 搜尋word的意思"
 
-		m = re.match(r"/[^ ]+ ", message)
-		if m != None:
+		if message.startswith("/"):
 			return ""
 
 		if self.isstart:
