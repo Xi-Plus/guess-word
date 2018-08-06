@@ -159,6 +159,7 @@ class TelegramGame(Game):
 		self.giveupduration = config.getint('telegram', 'giveupduration')
 		self.isdelusermsg = config.getboolean('telegram', 'isdelusermsg')
 		self.isdelbotmsg = config.getboolean('telegram', 'isdelbotmsg')
+		self.isdelanswer = config.getboolean('telegram', 'isdelanswer')
 		if int(userid) > 0:
 			self.cmdpostfix = ""
 		else :
@@ -168,13 +169,14 @@ class TelegramGame(Game):
 			if os.path.isfile(configpath):
 				config = configparser.ConfigParser()
 				config.read(configpath)
-				self.guesstimes = config.getint('limit', 'guesstimes')
-				self.hinttimes = config.getint('limit', 'hinttimes')
-				self.hintduration = config.getint('limit', 'hintduration')
-				self.giveuptimes = config.getint('limit', 'giveuptimes')
-				self.giveupduration = config.getint('limit', 'giveupduration')
-				self.isdelusermsg = config.getboolean('limit', 'isdelusermsg')
-				self.isdelbotmsg = config.getboolean('limit', 'isdelbotmsg')
+				self.guesstimes = config.getint('limit', 'guesstimes', fallback=self.guesstimes)
+				self.hinttimes = config.getint('limit', 'hinttimes', fallback=self.hinttimes)
+				self.hintduration = config.getint('limit', 'hintduration', fallback=self.hintduration)
+				self.giveuptimes = config.getint('limit', 'giveuptimes', fallback=self.giveuptimes)
+				self.giveupduration = config.getint('limit', 'giveupduration', fallback=self.giveupduration)
+				self.isdelusermsg = config.getboolean('limit', 'isdelusermsg', fallback=self.isdelusermsg)
+				self.isdelbotmsg = config.getboolean('limit', 'isdelbotmsg', fallback=self.isdelbotmsg)
+				self.isdelanswer = config.getboolean('limit', 'isdelanswer', fallback=self.isdelanswer)
 			else :
 				config = configparser.ConfigParser()
 				config.read(configpath)
@@ -186,6 +188,7 @@ class TelegramGame(Game):
 				config.set('limit', 'giveupduration', str(self.giveupduration))
 				config.set('limit', 'isdelusermsg', str(self.isdelusermsg))
 				config.set('limit', 'isdelbotmsg', str(self.isdelbotmsg))
+				config.set('limit', 'isdelanswer', str(self.isdelanswer))
 				config.write(open(configpath, 'w'))
 			self.isgroup = True
 			self.botmsgaction = ""
@@ -337,21 +340,23 @@ class TelegramGame(Game):
 				self.botmsgaction = "add"
 				if not self.isadmin():
 					return "只有群組管理員可以更改此設定"
-				m = re.match(r"/delmsg"+self.cmdpostfix+" (\d+) (\d+) ", message)
+				m = re.match(r"/delmsg"+self.cmdpostfix+" (\d) (\d) (\d)", message)
 				if m != None:
 					response = ""
 					isdelusermsg = bool(int(m.group(1)))
 					if isdelusermsg and not self.isbotisadmin():
 						isdelusermsg = False
-						response += "機器人非管理員，無法刪除使用者訊息，請先給予刪除訊息權限"
+						response += "機器人非管理員，無法刪除使用者訊息，請先給予刪除訊息權限\n"
 					isdelusermsg = str(isdelusermsg)
 					isdelbotmsg = str(bool(int(m.group(2))))
+					isdelanswer = str(bool(int(m.group(3))))
 					self.setconfig("isdelusermsg", isdelusermsg)
 					self.setconfig("isdelbotmsg", isdelbotmsg)
-					response += "已設定刪除使用者訊息："+isdelusermsg+"；刪除機器人訊息："+isdelbotmsg
+					self.setconfig("isdelanswer", isdelanswer)
+					response += "已設定刪除使用者訊息："+isdelusermsg+"；刪除機器人訊息："+isdelbotmsg+"；刪除答案："+isdelanswer
 					return response
 				else :
-					return "命令使用方法： "+"/delmsg"+self.cmdpostfix+" u b 設定是否刪除使用者及機器人訊息，是為1，否為0"
+					return "命令使用方法： "+"/delmsg"+self.cmdpostfix+" u b a 設定是否刪除使用者、機器人、答案的訊息，是為1，否為0"
 
 		m = re.match(r"/help"+self.cmdpostfix+" ", message)
 		if m != None:
@@ -375,7 +380,7 @@ class TelegramGame(Game):
 					   "每人每局可以猜錯"+str(self.guesstimes)+"次\n"+\
 					   ("每人"+str(self.hintduration)+"秒內可使用提示"+str(self.hinttimes)+"次\n" if self.hinttimes > 0 else "禁止使用提示\n")+\
 					   ("每人"+str(self.giveupduration)+"秒內可使用放棄"+str(self.giveuptimes)+"次\n" if self.giveuptimes > 0 else "禁止使用放棄\n")+\
-					   "刪除使用者訊息："+str(self.isdelusermsg)+"；刪除機器人訊息："+str(self.isdelbotmsg)+"\n"+\
+					   "刪除使用者訊息："+str(self.isdelusermsg)+"；刪除機器人訊息："+str(self.isdelbotmsg)+"；刪除答案訊息："+str(self.isdelanswer)+"\n"+\
 					   "使用 /help"+self.cmdpostfix+" 查看更改設定用指令"
 			else :
 				return "私訊模式中沒有可用設定"

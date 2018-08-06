@@ -59,6 +59,8 @@ def telegram():
 				game.sendmessage(response, data["message"]["message_id"])
 				if game.isgroup:
 					game.managemessage()
+					if game.isdelanswer:
+						game.addmessage(game.botmsgid)
 			return "OK"
 	return "OK"
 
