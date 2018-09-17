@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 import json
+import time
 from flask import Flask, request, abort
 import configparser
 from game import *
@@ -43,9 +44,11 @@ def telegram():
 	data = json.loads(request.data.decode("utf8"))
 	if "message" in data:
 		if "text" in data["message"]:
+			date = data["message"]["date"]
+			if date < time.time()-600:
+				return "OK"
 			userid = data["message"]["chat"]["id"]
 			fromid = data["message"]["from"]["id"]
-			date = data["message"]["date"]
 			text = data["message"]["text"]
 			game = TelegramGame(userid, fromid, date)
 			if "reply_to_message" in data["message"] and data["message"]["reply_to_message"]["from"]["id"] != game.botid:
