@@ -5,6 +5,7 @@ import random
 import re
 import os
 import json
+import subprocess
 import urllib.parse
 import urllib.request
 
@@ -465,9 +466,9 @@ class TelegramGame(Game):
 		for row in rows:
 			try:
 				url = "https://api.telegram.org/bot"+self.token+"/deleteMessage?chat_id="+str(self.userid)+"&message_id="+row[0]
-				urllib.request.urlopen(url)
-			except urllib.error.HTTPError as e:
-				self.log("del msg error:"+str(e.code)+" "+str(e.read().decode("utf-8")))
+				subprocess.Popen(['curl', '-s', url])
+			except Exception:
+				self.log("del msg error:")
 
 class LineGame(Game):
 	def __init__(self, userid, replytoken):
