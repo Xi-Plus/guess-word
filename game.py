@@ -33,17 +33,17 @@ class Game:
             self.oldguess = rows[0][0]
             self.word = rows[0][1]
             self.wordhans = ZhConversion(self.word).text()
-			wordlen = len(self.word)
-			if wordlen <= 3:
-				self.guesslenlimit = 10
-			elif wordlen <= 5:
-				self.guesslenlimit = 15
-			elif wordlen <= 10:
-				self.guesslenlimit = 20
-			elif wordlen <= 16:
-				self.guesslenlimit = 25
-			else:
-        		self.guesslenlimit = int(wordlen * 1.5)
+            wordlen = len(self.word)
+            if wordlen <= 3:
+                self.guesslenlimit = 10
+            elif wordlen <= 5:
+                self.guesslenlimit = 15
+            elif wordlen <= 10:
+                self.guesslenlimit = 20
+            elif wordlen <= 16:
+                self.guesslenlimit = 25
+            else:
+                self.guesslenlimit = int(wordlen * 1.5)
             self.meaning = rows[0][2]
             self.isstart = True
 
