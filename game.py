@@ -348,7 +348,7 @@ class TelegramGame(Game):
                         return "第二個參數太大囉"
                     self.setconfig("giveuptimes", m.group(1))
                     self.setconfig("giveupduration", m.group(2))
-                    return "已限制每人" + m.group(2) + "秒內最多可以使用提示" + m.group(1) + "次"
+                    return "已限制每人" + m.group(2) + "秒內最多可以使用放棄" + m.group(1) + "次"
                 else:
                     return "命令使用方法： " + "/giveuplimit" + self.cmdpostfix + " c t 限制t秒內最多可以使用放棄c次"
 
