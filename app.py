@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 import json
 import time
+import traceback
 from flask import Flask, request, abort
 import configparser
 from game import *
@@ -43,6 +44,28 @@ def facebookpost():
     return "OK"
 
 
+@app.route("/guess")
+def log1():
+    game = Game("unknown", "unknown")
+    game.cur.execute("""SELECT * FROM `guess`""")
+    rows = game.cur.fetchall()
+    text = ""
+    for row in rows:
+        text += row[0] + " " + row[1] + " " + row[2] + " " + row[3] + " " + row[4] + "\n<hr>\n"
+    return text
+
+
+@app.route("/log")
+def log2():
+    game = Game("unknown", "unknown")
+    game.cur.execute("""SELECT `message` FROM `log` ORDER BY `time` DESC LIMIT 20""")
+    rows = game.cur.fetchall()
+    text = ""
+    for row in rows:
+        text += row[0] + "\n<hr>\n"
+    return text
+
+
 @app.route("/telegram", methods=['POST'])
 def telegram():
     data = json.loads(request.data.decode("utf8"))
@@ -59,6 +82,12 @@ def telegram():
                 return "OK"
             if "reply_to_message" not in data["message"] and not text.startswith("/") and game.isgroup:
                 return "OK"
+            first_name = data["message"]["from"]["first_name"]
+            chat_name = first_name
+            if "title" in data["message"]["chat"]:
+                chat_name = data["message"]["chat"]["title"]
+                if "username" in data["message"]["chat"]:
+                    chat_name += " @" + data["message"]["chat"]["username"]
             response = game.response(text)
             if response != "":
                 if game.isdelusermsg:
@@ -68,6 +97,7 @@ def telegram():
                     game.managemessage()
                     if game.isdelanswer:
                         game.addmessage(game.botmsgid)
+                game.log("get " + str(userid) + " " + str(chat_name) + " " + str(fromid) + " " + first_name + " " + text)
             return "OK"
     return "OK"
 
@@ -94,6 +124,7 @@ def line_message_handler(event):
     reply_token = event.reply_token
 
     game = LineGame(userid, reply_token)
+    game.log('get ' + str(userid) + ' ' + str(message))
     response = game.response(message)
     game.sendmessage(response)
 
