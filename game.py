@@ -153,7 +153,7 @@ class Game:
                          (self.platform, self.userid, str(message)))
         self.db.commit()
 
-    def __exit__(self):
+    def __del__(self):
         self.db.close()
 
 
