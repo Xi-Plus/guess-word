@@ -97,7 +97,6 @@ def telegram():
                     game.managemessage()
                     if game.isdelanswer:
                         game.addmessage(game.botmsgid)
-                game.log("get " + str(userid) + " " + str(chat_name) + " " + str(fromid) + " " + first_name + " " + text)
             return "OK"
     return "OK"
 
