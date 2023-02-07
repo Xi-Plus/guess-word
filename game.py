@@ -54,7 +54,7 @@ class Game:
             length = int(length)
             if length < 2:
                 length = random.randint(2, 10)
-            if length > 10:
+            if length > 10 and length != 64:
                 length = 10
         except Exception as e:
             length = random.randint(2, 10)
