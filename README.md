@@ -8,6 +8,6 @@
 3. 設定 ```guess_word.wsgi```
 4. 複製 ```config.sample.ini``` 至 ```config.ini``` 並設定裡面的內容
 5. 複製 ```zhconversion.sample.ini``` 至 ```zhconversion.ini``` 並設定裡面的內容（可從[ZhConversion.php · mediawiki](https://phabricator.wikimedia.org/source/mediawiki/browse/master/languages/data/ZhConversion.php)取得）
-6. 至[《重編國語辭典修訂本》資料下載](http://resources.publicense.moe.edu.tw/dict_reviseddict_download.html)下載文字資料庫，並解壓縮後將三個 xls 檔另存為 csv 檔
+6. 至[《重編國語辭典修訂本》資料下載](https://language.moe.gov.tw/001/Upload/Files/site_content/M0001/respub/dict_reviseddict_download.html)下載文字資料庫，並解壓縮後將三個 xls 檔另存為 csv 檔
 7. 分別對三個 csv 檔執行```python import.py csv檔名.csv```
 8. 完成
